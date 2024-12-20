@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Calculator with Fractions, Decimals & Graphing</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.20.0/plotly.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fraction.js@4.1.1/fraction.min.js"></script>
+  <style>
+    :root {
+      --background-light: #ffffff;
+      --background-dark: #121212;
+      --text-light: #000000;
+      --text-dark: #ffffff;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 20px;
+      background-color: var(--background-dark);
+      color: var(--text-dark);
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    body.light-mode {
+      background-color: var(--background-light);
+      color: var(--text-light);
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 300px;
+      padding: 10px;
+      font-size: 16px;
+      margin: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      margin: 10px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+    }
+
+    #graph {
+      width: 100%;
+      height: 500px;
+      margin: 20px auto;
+    }
+
+    .bar {
+      display: flex;
+      justify-content: center;
+      margin: 20px;
+    }
+
+    .bar button {
+      margin: 0 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Advanced Calculator with Fractions, Decimals, and Graphing</h1>
+
+  <div class="bar">
+    <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
+  </div>
+
+  <!-- Calculator Section -->
+  <h2>Calculator</h2>
+  <label for="num1">Enter first number (fraction, decimal, or integer):</label>
+  <input type="text" id="num1" placeholder="e.g., 1/2, 0.5, or 3">
+
+  <label for="num2">Enter second number (fraction, decimal, or integer):</label>
+  <input type="text" id="num2" placeholder="e.g., 3/4, 0.75, or 2">
+
+  <div>
+    <button onclick="calculate('add')">Add</button>
+    <button onclick="calculate('subtract')">Subtract</button>
+    <button onclick="calculate('multiply')">Multiply</button>
+    <button onclick="calculate('divide')">Divide</button>
+    <button onclick="calculate('sqrt')">Square Root (num1)</button>
+    <button onclick="calculate('power')">Power (num1^num2)</button>
+  </div>
+
+  <label for="fractionMode">Fraction Mode:</label>
+  <input type="checkbox" id="fractionMode"> Use Fractions
+
+  <p id="calculator-result"></p>
+
+  <!-- Graphing Section -->
+  <h2>Graphing</h2>
+  <label for="equation1">Equation 1 (e.g., x^2):</label><br>
+  <input type="text" id="equation1" placeholder="Enter equation in terms of x"><br>
+
+  <label for="equation2">Equation 2 (optional):</label><br>
+  <input type="text" id="equation2" placeholder="Enter second equation"><br>
+
+  <label for="rangeStart">X-Axis Start:</label>
+  <input type="number" id="rangeStart" value="-10">
+
+  <label for="rangeEnd">X-Axis End:</label>
+  <input type="number" id="rangeEnd" value="10">
+
+  <button onclick="plotGraphs()">Plot Graphs</button>
+  <button onclick="clearGraph()">Clear Graph</button>
+
+  <div id="graph"></div>
+
+  <script>
+    function toggleDarkMode() {
+      document.body.classList.toggle('light-mode');
+    }
+
+    function calculate(operation) {
+      const num1Input = document.getElementById('num1').value;
+      const num2Input = document.getElementById('num2').value;
+      const fractionMode = document.getElementById('fractionMode').checked;
+
+      let num1, num2, result;
+
+      try {
+        num1 = parseInput(num1Input);
+        if (operation !== 'sqrt') {
+          num2 = parseInput(num2Input);
+        }
+      } catch (error) {
+        alert("Invalid input. Please enter valid fractions, decimals, or integers.");
+        return;
+      }
+
+      switch (operation) {
+        case 'add':
+          result = num1.add(num2);
+          break;
+        case 'subtract':
+          result = num1.sub(num2);
+          break;
+        case 'multiply':
+          result = num1.mul(num2);
+          break;
+        case 'divide':
+          if (num2.numerator === 0) {
+            alert("Error: Division by zero!");
+            return;
+          }
+          result = num1.div(num2);
+          break;
+        case 'sqrt':
+          if (num1.valueOf() < 0) {
+            alert("Error: Cannot take the square root of a negative number.");
+            return;
+          }
+          result = new Fraction(Math.sqrt(num1.valueOf()));
+          break;
+        case 'power':
+          result = new Fraction(Math.pow(num1.valueOf(), num2.valueOf()));
+          break;
+        default:
+          result = "Invalid operation.";
+      }
+
+      const resultText = fractionMode
+        ? `Result: ${result.toFraction(true)}`
+        : `Result: ${result.valueOf().toFixed(6)}`;
+      document.getElementById('calculator-result').innerText = resultText;
+    }
+
+    function parseInput(input) {
+      input = input.trim();
+
+      if (input.includes('/')) {
+        return new Fraction(input);
+      } else if (!isNaN(input)) {
+        return new Fraction(parseFloat(input));
+      } else {
+        throw new Error("Invalid input.");
+      }
+    }
+
+    function evaluateEquation(equation, x) {
+      try {
+        equation = equation.replace(/x/g, `(${x})`);
+        return new Function('x', `return ${equation}`)(x);
+      } catch (e) {
+        alert(`Error in equation: ${equation}`);
+        return NaN;
+      }
+    }
+
+    function plotGraphs() {
+      const eq1 = document.getElementById('equation1').value;
+      const eq2 = document.getElementById('equation2').value;
+      const rangeStart = parseFloat(document.getElementById('rangeStart').value);
+      const rangeEnd = parseFloat(document.getElementById('rangeEnd').value);
+
+      if (!eq1) {
+        alert("Please enter at least one equation.");
+        return;
+      }
+
+      const xValues = [];
+      const yValues1 = [];
+      const yValues2 = [];
+      const step = 0.1;
+
+      for (let x = rangeStart; x <= rangeEnd; x += step) {
+        xValues.push(x);
+        yValues1.push(evaluateEquation(eq1, x));
+        if (eq2) {
+          yValues2.push(evaluateEquation(eq2, x));
+        }
+      }
+
+      const data = [
+        { x: xValues, y: yValues1, type: 'scatter', mode: 'lines', name: eq1 },
+        ...(eq2 ? [{ x: xValues, y: yValues2, type: 'scatter', mode: 'lines', name: eq2 }] : [])
+      ];
+
+      Plotly.newPlot('graph', data, {
+        title: 'Graph Plot',
+        xaxis: { title: 'x' },
+        yaxis: { title: 'y' }
+      });
+    }
+
+    function clearGraph() {
+      Plotly.purge('graph');
+    }
+  </script>
+</body>
+</html>
